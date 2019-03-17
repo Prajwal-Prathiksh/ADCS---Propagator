@@ -135,3 +135,31 @@ print()
 print('Error - R (SGP4) = ', ers, '       Error - V(SGP4) = ',evs)
 '''
 
+
+#-----Block of code that prints the Percentage Error in the norm of------
+#      delta R, and V divided by the norm of corresponding R or V 
+#               of SGP4, over a given time interval.
+'''
+ERJ, EVJ = [], []
+ERS, EVS = [], []
+l21, l22 = tc.tleINS[0:2]
+l11, l12 = tc.tleINS[2*i:2*i+2]
+sat1 = satellite(l11,l12)
+sat2 = satellite(l21,l22)
+
+hours = 4 #Set time duration
+scale = np.arange(0,3600*hours,220)
+for deltaT in scale:
+    deltaT=deltaT/3600
+    rs,vs,rj,vj = sat1.comparej2Vsgp(deltaT)
+    erj2, evj2 = j2.norm(rj - rs)/j2.norm(rs), j2.norm(vj - vs)/j2.norm(vs)
+    ERJ.append(erj2*100)
+    EVJ.append(evj2*100)
+plt.plot(scale, ERJ,'o')
+plt.plot(scale,EVJ,'o')
+plt.legend(['Error - r', 'Error - v'])
+plt.title('Error - Position, Velocity')
+plt.xlabel('Time (seconds) ---->')
+plt.ylabel('Error (%): (norm(delta vector)/norm(final vector)) * 100:')
+plt.show()
+'''
