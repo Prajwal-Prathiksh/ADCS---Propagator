@@ -26,6 +26,7 @@ class satellite:
            jd: floating-point number, optional
                Takes in the time period over which the state vectors have 
                to be propagated, in terms of delta - time, in julian format.
+               Note: 1 Julian Time = 24 Hrs.
                
                Calling the default value, gives the initial state vectors of
                the satelite, i.e, at t = 0.
@@ -63,7 +64,7 @@ class satellite:
    
 #----- i takes int-values from 1 to 7, and corresonds to-----
 #            TLEs of older times as i increases .
-i = 1
+i = 3
 
 
 #-----Block of Code that plots the error in norm of delta-r, delta-v-------
@@ -73,7 +74,11 @@ i = 1
 '''
 erj2, evj2 = [], []
 ers, evs = [], []
-j = range(1,8)
+
+erj2p, evj2p = [], []
+ersp, evsp = [], []
+
+j = range(1,2)
 for i in j:
     l21, l22 = tc.tleINS[0:2]
     l11, l12 = tc.tleINS[2*i:2*i+2]
@@ -83,15 +88,22 @@ for i in j:
     
     deltaT = (sat2.jddate - sat1.jddate)*24
     rs,vs,rj,vj = sat1.comparej2Vsgp(deltaT)
-    print(np.round(deltaT,2))
+    print('Time(Hrs):', np.round(deltaT,2))
     
     R,V = sat2.r_init, sat2.v_init
     erj2.append( (j2.norm(rj - R)) )
-    evj2.append( (j2.norm(vj - V ))/j2.norm(V) )
-    ers.append( j2.norm(rs - R)/j2.norm(R) )
-    evs.append( j2.norm(vs - V)/j2.norm(V) ) 
+    evj2.append( (j2.norm(vj - V )) )
+    ers.append( j2.norm(rs - R))
+    evs.append( j2.norm(vs - V))
+    
+    erj2p.append( 100*(j2.norm(rj - R))/j2.norm(R) )
+    evj2p.append( 100*(j2.norm(vj - V ))/j2.norm(V) )
+    ersp.append( 100*j2.norm(rs - R)/j2.norm(R))
+    evsp.append( 100*j2.norm(vs - V)/j2.norm(V))  
     
     
+ 
+  
 plt.plot(j, erj2, 'o')
 plt.plot(j, ers, 'o')
 plt.legend(["Error Position- J2", "Error Position - SGP4"])
@@ -107,6 +119,24 @@ plt.title('Norm of delta-v')
 plt.legend(["Error Velocity - J2", "Error Velocity - SGP4"])
 plt.xlabel('Iterations')
 plt.ylabel('delta-v (km/s)')
+plt.show()
+
+plt.figure()
+plt.plot(j, erj2p, 'o')
+plt.plot(j, ersp, 'o')
+plt.legend(["Error Position- J2", "Error Position - SGP4"])
+plt.title('Norm of delta-r in Percentage')
+plt.xlabel('Iterations')
+plt.ylabel('|delta-r| / |R| (Percentage)')
+plt.show()
+
+plt.figure()
+plt.plot(j, evj2p,'o')
+plt.plot(j, evsp,'o')
+plt.title('Norm of delta-v in Percentage')
+plt.legend(["Error Velocity - J2", "Error Velocity - SGP4"])
+plt.xlabel('Iterations')
+plt.ylabel('|delta-v| / |V| (Percentage)')
 plt.show()
 '''
 
@@ -163,3 +193,5 @@ plt.xlabel('Time (seconds) ---->')
 plt.ylabel('Error (%): (norm(delta vector)/norm(final vector)) * 100:')
 plt.show()
 '''
+
+
