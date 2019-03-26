@@ -1,5 +1,5 @@
 import numpy as np
-from pylab import*
+
 
 #-----Differential Equation - Function------
 #        d(x1) = x2
@@ -81,10 +81,14 @@ def propagate(r,vel, time, h_step_size = 1, drag=False):
        Parameters:
        -----------
        r: list of length (3)
-          This initializes the position of the satellite.
+            This initializes the position of the satellite.
           
        vel: list of length (3)
             This initializes the velocity of the satellite.
+            
+       time: floating-point number
+            This initializes the time interval over which the propagator
+            runs, in seconds.
             
        h_step_size: floating-point number, optional
             This sets the value of the step size, for RK-4.
@@ -107,7 +111,6 @@ def propagate(r,vel, time, h_step_size = 1, drag=False):
         dx,dy = RK4_d(x,y,cx,cy,h)
         x = x + ((h)*(ax + 2*(bx + cx) + dx))/6
         y = y + ((h)*(ay + 2*(by + cy) + dy))/6
-        #print(x)
 
     return x,y
 
@@ -159,26 +162,10 @@ def norm(arr):
 
 #-----Values of Orbital Constants being assigned-----
 mu = 398600.4415
-J2 = 1.0826267 * 10**(-6)
+J2 = 1.082635854e-3 
 w_angular_vel = np.array([0,0,7.2921156e-5])
 c_drag = 2
 area = 0.01
 mass = 0.9
 Radius_Earth = 6378.1363          #In Km.
 B = (c_drag*area)/mass
-
-
-
-
-
-
-
-
-
-
-
-    
-    
-    
-    
-    
