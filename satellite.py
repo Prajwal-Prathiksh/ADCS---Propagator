@@ -26,6 +26,7 @@ class satellite:
            jd: floating-point number, optional
                Takes in the time period over which the state vectors have 
                to be propagated, in terms of delta - time, in julian format.
+               Note: 1 Julian Time = 24 Hrs.
                
                Calling the default value, gives the initial state vectors of
                the satelite, i.e, at t = 0.
@@ -73,40 +74,78 @@ i = 1
 '''
 erj2, evj2 = [], []
 ers, evs = [], []
-j = range(1,8)
+erj2p, evj2p = [], []
+ersp, evsp = [], []
+j = range(1,9)
 for i in j:
     l21, l22 = tc.tleINS[0:2]
     l11, l12 = tc.tleINS[2*i:2*i+2]
-
     sat1 = satellite(l11,l12)
     sat2 = satellite(l21,l22)
     
     deltaT = (sat2.jddate - sat1.jddate)*24
     rs,vs,rj,vj = sat1.comparej2Vsgp(deltaT)
-    print(np.round(deltaT,2))
+    print('Time(Hrs):', np.round(deltaT,2))
     
     R,V = sat2.r_init, sat2.v_init
     erj2.append( (j2.norm(rj - R)) )
-    evj2.append( (j2.norm(vj - V ))/j2.norm(V) )
-    ers.append( j2.norm(rs - R)/j2.norm(R) )
-    evs.append( j2.norm(vs - V)/j2.norm(V) ) 
+    evj2.append( (j2.norm(vj - V )) )
+    ers.append( j2.norm(rs - R))
+    evs.append( j2.norm(vs - V))
+    
+    erj2p.append( 100*(j2.norm(rj - R))/j2.norm(R) )
+    evj2p.append( 100*(j2.norm(vj - V ))/j2.norm(V) )
+    ersp.append( 100*j2.norm(rs - R)/j2.norm(R))
+    evsp.append( 100*j2.norm(vs - V)/j2.norm(V))  
     
     
-plt.plot(j, erj2, 'o')
-plt.plot(j, ers, 'o')
-plt.legend(["Error Position- J2", "Error Position - SGP4"])
-plt.title('Norm of delta-r')
-plt.xlabel('Iterations')
-plt.ylabel('delta-r (kms)')
+ 
+  
+plt.plot(j, erj2,'bo')
+plt.plot(j, ers, 'ro')
+plt.legend(["Error Position- J2", "Error Position - SGP4"], fontsize = 'large')
+plt.plot(j, erj2, 'b--')
+plt.plot(j, ers, 'r--')
+plt.title(r'Norm of $\delta r$', fontdict = {'fontsize':20})
+plt.xlabel(r'Iterations $\rightarrow$', fontdict = {'fontsize':15})
+plt.ylabel(r'$\delta r (kms) \rightarrow$', fontdict = {'fontsize':15})
+plt.grid()
 plt.show()
 
 plt.figure()
-plt.plot(j, evj2,'o')
-plt.plot(j, evs,'o')
-plt.title('Norm of delta-v')
-plt.legend(["Error Velocity - J2", "Error Velocity - SGP4"])
-plt.xlabel('Iterations')
-plt.ylabel('delta-v (km/s)')
+plt.plot(j, evj2,'bo')
+plt.plot(j, evs,'ro')
+plt.title(r'Norm of $\delta v$', fontdict = {'fontsize':20})
+plt.legend(["Error Velocity - J2", "Error Velocity - SGP4"], fontsize='large')
+plt.plot(j, evj2,'b--')
+plt.plot(j, evs,'r--')
+plt.xlabel(r'Iterations $\rightarrow$', fontdict = {'fontsize':15})
+plt.ylabel(r'$\delta v (km/s) \rightarrow$', fontdict = {'fontsize':15})
+plt.grid()
+plt.show()
+
+plt.figure()
+plt.plot(j, erj2p, 'bo')
+plt.plot(j, ersp, 'ro')
+plt.legend(["Error Position- J2", "Error Position - SGP4"], fontsize = 'large')
+plt.title(r'Norm of $\delta r (in  \%)$', fontdict = {'fontsize':24})
+plt.xlabel(r'Iterations  $\rightarrow$', fontdict = {'fontsize':15})
+plt.plot(j, erj2p, 'b--')
+plt.plot(j, ersp, 'r--')
+plt.ylabel(r'$\frac{|\delta r| \times 100}{|R|}$', fontdict = {'fontsize':22} )
+plt.grid()
+plt.show()
+
+plt.figure()
+plt.plot(j, evj2p,'bo')
+plt.plot(j, evsp,'ro')
+plt.title(r'Norm of $\delta v (in  \%)$', fontdict = {'fontsize':24})
+plt.legend(["Error Velocity - J2", "Error Velocity - SGP4"], fontsize = 'large')
+plt.plot(j, evj2p,'b--')
+plt.plot(j, evsp,'r--')
+plt.xlabel(r'Iterations $\rightarrow$', fontdict = {'fontsize':15})
+plt.ylabel(r'$\frac{|\delta v| \times 100} {|V|}$', fontdict = {'fontsize':22})
+plt.grid()
 plt.show()
 '''
 
@@ -121,7 +160,6 @@ l21, l22 = tc.tleINS[0:2]
 l11, l12 = tc.tleINS[2*i:2*i+2]
 sat1 = satellite(l11,l12)
 sat2 = satellite(l21,l22)
-
 deltaT = (sat2.jddate - sat1.jddate)*24
 rs,vs,rj,vj = sat1.comparej2Vsgp(deltaT)
 R,V = sat2.r_init, sat2.v_init
@@ -146,7 +184,6 @@ l21, l22 = tc.tleINS[0:2]
 l11, l12 = tc.tleINS[2*i:2*i+2]
 sat1 = satellite(l11,l12)
 sat2 = satellite(l21,l22)
-
 hours = 4 #Set time duration
 scale = np.arange(0,3600*hours,220)
 for deltaT in scale:
