@@ -24,4 +24,4 @@ def str_to_float(x):
 
 drag_df['12'] = drag_df['12'].apply(str_to_float)
 drag_df.columns = ['Line Number', 'Satellite - Epoch', 'B-star']
-drag_df.describe()
+print(drag_df.describe())
