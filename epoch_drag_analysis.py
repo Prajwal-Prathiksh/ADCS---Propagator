@@ -35,4 +35,4 @@ columnTitles = ['Date', 'Time', 'R_x', 'R_y', 'R_z', 'V_x', 'V_y', 'V_z', 'BSTAR
 sat_df = sat_df.reindex(columns = columnTitles)
 
 #------Exporting the Panda Dataframe as a CSV------
-#sat_df.to_csv('hell.csv', index = False)
+#sat_df.to_csv('Epoch_Analysis.csv', index = False)
