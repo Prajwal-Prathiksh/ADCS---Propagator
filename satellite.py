@@ -13,10 +13,41 @@ class satellite:
         self.line1 = line1 
         self.line2 = line2
         self.jddate = twoline2rv(self.line1, self.line2, wgs72).jdsatepoch #Initializing the Julian Date for given TLE.
-        self.gregdate = julian.from_jd(self.jddate) #Initializing the Gregorian Date for given TLE.
+        self.gregdate, self.gregtime = self.read_date(self.jddate) #Initializing the Gregorian Date, and Time (24 Hrs. format) for given TLE.
         self.r_init, self.v_init = self.sgpPropagate(self.jddate) #Initializing Inital State Vectors at t = 0 from TLE.
+        self.b_star = self.read_b_star(self.line1) #Initializing b_star term for given TLE at epoch.
+        
+    def read_b_star(self, line):
+        """Returns the BSTAR term as a float.
     
+           Parameters:
+           -----------
+           line: string
+               Takes in the first line of the TLE, as a string.  
+        """ 
+        temp = line[54:61].split('-')
+        drag = (float(temp[0])*10**-5) * (10**(-(float(temp[1]))))
+        return drag    
     
+    def read_date(self, jd_temp):
+        """Returns the Gregorian Date and Time in a string format.
+    
+           Parameters:
+           -----------
+           jd_temp: floating-point number
+               Takes in the Julian Date as a floating point number.  
+        """ 
+        a = julian.from_jd(jd_temp)       
+        y = a.year
+        mont = a.month
+        d = a.day
+        h = a.hour
+        m = a.minute
+        s = a.second + a.microsecond*10**-6
+        temp_time = str(h) + ':' + str(m) + ':' + str(s) 
+        temp_date = str(d) + '/' + str(mont) + '/' + str(y)
+        return temp_date, temp_time
+        
     def sgpPropagate(self,jd=0):
         """Propogate the State Variables through SGP4 model, and returns the
            propagated R and V state vectors.
@@ -76,7 +107,7 @@ erj2, evj2 = [], []
 ers, evs = [], []
 erj2p, evj2p = [], []
 ersp, evsp = [], []
-j = range(1,9)
+j = range(1,3)
 for i in j:
     l21, l22 = tc.tleINS[0:2]
     l11, l12 = tc.tleINS[2*i:2*i+2]
@@ -199,4 +230,3 @@ plt.title('Error - Position, Velocity')
 plt.xlabel('Time (seconds) ---->')
 plt.ylabel('Error (%): (norm(delta vector)/norm(final vector)) * 100:')
 plt.show()
-'''
