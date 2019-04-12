@@ -5,6 +5,7 @@ import numpy as np
 import julian 
 import testcase_satellite as tc
 import matplotlib.pyplot as plt
+import read_ins_2018_tle as rins
 
 
 #-----Defining a class Satellite-----
@@ -26,7 +27,10 @@ class satellite:
                Takes in the first line of the TLE, as a string.  
         """ 
         temp = line[54:61].split('-')
-        drag = (float(temp[0])*10**-5) * (10**(-(float(temp[1]))))
+        if temp[0] == '00000+0':
+            drag = 0
+        else:
+            drag = (float(temp[0])*10**-5) * (10**(-(float(temp[1]))))
         return drag    
     
     def read_date(self, jd_temp):
@@ -257,8 +261,8 @@ def mock_runs(ch):
         t_axis = []
         for i in j:
             t = 1
-            l11, l12 = tc.tleINS_full[(t-1)*2:t*2]
-            l21, l22 = tc.tleINS_full[2*i:2*i+2]
+            l11, l12 = tc.tle_2018_complete[(t-1)*2:t*2]
+            l21, l22 = tc.tle_2018_complete[2*i:2*i+2]
             sat1 = satellite(l11,l12)
             sat2 = satellite(l21,l22)
             
