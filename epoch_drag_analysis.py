@@ -10,8 +10,8 @@ rx_list, ry_list, rz_list = [], [], []
 vx_list, vy_list, vz_list = [], [], []
 
     
-for i in range( 0, len( tc.tleINS_full), 2 ):
-    l1, l2 = tc.tleINS_full[i], tc.tleINS_full[i+1]
+for i in range( 0, len( tc.tle_2018_complete) - 2, 2 ):
+    l1, l2 = tc.tle_2018_complete[i], tc.tle_2018_complete[i+1]
     t_temp = st.satellite(l1, l2)
     
     x,y,z = t_temp.r_init
@@ -94,6 +94,7 @@ sat_df.sort_values (by = ['Eccentric_Anomaly'], inplace = True)
 
 #------Exporting the Panda Dataframe as a CSV------
 #sat_df.to_csv('Epoch_Analysis.csv', index = True)
+#sat_df.describe().to_csv('Epoch_Analysis_Describe.csv', index = True)
 
 
 #print(sat_df['Date'])
