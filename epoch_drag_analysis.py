@@ -3,15 +3,17 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import testcase_satellite as tc
+from mayavi import mlab
 
     
 gregdate_list, gregtime_list, drag_list = [], [], []
 rx_list, ry_list, rz_list = [], [], []
 vx_list, vy_list, vz_list = [], [], []
 
-    
-for i in range( 0, len( tc.tle_2018_complete) - 2, 2 ):
-    l1, l2 = tc.tle_2018_complete[i], tc.tle_2018_complete[i+1]
+analysis_tle = tc.niusat_tle_complete
+
+for i in range( 0, len( analysis_tle) - 2, 2 ):
+    l1, l2 = analysis_tle[i], analysis_tle[i+1]
     t_temp = st.satellite(l1, l2)
     
     x,y,z = t_temp.r_init
@@ -92,9 +94,23 @@ columnTitles = ['Date', 'Time', 'R_x', 'R_y', 'R_z', 'V_x', 'V_y', 'V_z', 'BSTAR
 sat_df = sat_df.reindex(columns = columnTitles)
 sat_df.sort_values (by = ['Eccentric_Anomaly'], inplace = True)
 
+
+csv_title = 'pratham' + '_Epoch_Analysis'
 #------Exporting the Panda Dataframe as a CSV------
-#sat_df.to_csv('Epoch_Analysis.csv', index = True)
-#sat_df.describe().to_csv('Epoch_Analysis_Describe.csv', index = True)
+# NOTE: Change the Title of the CSV File before saving.
+
+'''sat_df.to_csv(csv_title + '.csv', index = True)
+sat_df.describe().to_csv(csv_title + '_Describe.csv', index = True)'''
 
 
 #print(sat_df['Date'])
+
+'''Radius_Earth = 6378.1363
+pts = mlab.points3d(rx_list, ry_list, rz_list,drag_list, mask_points = 1)
+phi, theta = np.mgrid [0:np.pi:30j, 0:2*np.pi:20j]
+x = Radius_Earth*np.sin(phi)*np.cos(theta)
+y = Radius_Earth*np.sin(phi)*np.sin(theta)
+z = Radius_Earth*np.cos(phi)
+
+mlab.mesh(x,y,z,representation = 'wireframe')
+mlab.show()'''
