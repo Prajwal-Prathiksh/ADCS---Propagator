@@ -121,7 +121,7 @@ def mock_runs(ch):
               norm of delta R and delta V for both SGP4 and J2 against the 
               initial state vectors.
 
-           3: Block of code that prints the Pe3rcentage Error in the norm of
+           3: Block of code that prints the Percentage Error in the norm of
               delta R, and V divided by the norm of corresponding R or V 
               of SGP4, over a given time interval.
 
@@ -130,6 +130,11 @@ def mock_runs(ch):
               this obtained from TLE - 1 (sat1) and the predicted state 
               values from a later TLE - 2 (sat2).
               NOTE: This works on the complete data set of TLE's available
+
+           5: Block of code that plots the error in SGP4 propagation,
+              by changing the values of BSTAR term in TLE-1, and comparing
+              the propagated state vectors to the Initial state vectors
+              predicted by TLE.
     """ 
     
     #----- i takes int-values from 1 to 7, and corresonds to-----
@@ -324,6 +329,112 @@ def mock_runs(ch):
         plt.legend(["Error Velocity - J2", "Error Velocity - SGP4"], fontsize = 'large')
         plt.plot(j, evj2p,'b--')
         plt.plot(j, evsp,'r--')
+        plt.xlabel(r'Hours $\rightarrow$', fontdict = {'fontsize':15})
+        plt.ylabel(r'$\frac{|\delta v| \times 100} {|V|}$', fontdict = {'fontsize':22})
+        plt.grid()
+        plt.show()
+
+    elif ch == 5:
+
+        er1, ev1, erp1, evp1 = [], [], [], []
+        er2, ev2, erp2, evp2 = [], [], [], []
+        er3, ev3, erp3, evp3 = [], [], [], []
+        er4, ev4, erp4, evp4 = [], [], [], []
+        er5, ev5, erp5, evp5 = [], [], [], []
+        j = range(0,100,5)
+        t_axis = []
+        for i in j:
+            num = 460
+            temp = tc.pratham_tle_complete[num:num+2]
+            l11_0, l12 = temp
+            l21, l22 = tc.pratham_tle_complete[(num + 2*i): (num + 2*i+2)]
+
+            sat1 = satellite(l11_0,l12)
+            satf = satellite(l21,l22)
+
+            init_drag = l11_0[54:61]
+            new_drag1 = '00000+0'
+            new_drag2 = '27678-4' 
+            new_drag3 = '89564-5'
+            new_drag4 = '78954-3'
+
+            l11_1 = l11_0.replace(init_drag, new_drag1)
+            l11_2 = l11_0.replace(init_drag, new_drag2)
+            l11_3 = l11_0.replace(init_drag, new_drag3)
+            l11_4 = l11_0.replace(init_drag, new_drag4)
+
+
+            sat2 = satellite(l11_1, l12)
+            sat3 = satellite(l11_2, l12)
+            sat4 = satellite(l11_3, l12)
+            sat5 = satellite(l11_4, l12)
+            
+            deltaT = (satf.jddate - sat1.jddate)*24
+            t_axis.append(deltaT)
+
+            r1, v1 = sat1.sgpPropagate(satf.jddate)
+            r2, v2 = sat2.sgpPropagate(satf.jddate)
+            r3, v3 = sat3.sgpPropagate(satf.jddate)
+            r4, v4 = sat4.sgpPropagate(satf.jddate)
+            r5, v5 = sat5.sgpPropagate(satf.jddate)
+
+            R_predict, V_predict = satf.r_init, satf.v_init
+
+            er1.append( j2.norm(R_predict - r1))
+            ev1.append( j2.norm(V_predict - v1))
+
+            er2.append( j2.norm(R_predict - r2))
+            ev2.append( j2.norm(V_predict - v2))
+
+            er3.append( j2.norm(R_predict - r3))
+            ev3.append( j2.norm(V_predict - v3))
+
+            er4.append( j2.norm(R_predict - r4))
+            ev4.append( j2.norm(V_predict - v4))
+
+            er5.append( j2.norm(R_predict - r1))
+            ev5.append( j2.norm(V_predict - v1))
+            
+            erp1.append( 100*(j2.norm(R_predict - r1))/j2.norm(R_predict) )
+            evp1.append( 100*(j2.norm(V_predict - v1))/j2.norm(V_predict) )
+
+            erp2.append( 100*(j2.norm(R_predict - r2))/j2.norm(R_predict) )
+            evp2.append( 100*(j2.norm(V_predict - v2))/j2.norm(V_predict) )
+
+            erp3.append( 100*(j2.norm(R_predict - r3))/j2.norm(R_predict) )
+            evp3.append( 100*(j2.norm(V_predict - v3))/j2.norm(V_predict) )
+
+            erp4.append( 100*(j2.norm(R_predict - r4))/j2.norm(R_predict) )
+            evp4.append( 100*(j2.norm(V_predict - v4))/j2.norm(V_predict) )
+
+            erp5.append( 100*(j2.norm(R_predict - r5))/j2.norm(R_predict) )
+            evp5.append( 100*(j2.norm(V_predict - v5))/j2.norm(V_predict) )
+
+        j = t_axis
+        o_bstar = 'Actual BSTAR --> ' + init_drag
+        plt.figure()
+        plt.plot(j, erp1, 'o')
+        plt.plot(j, erp2, 'o')
+        plt.plot(j, erp3, 'o')
+        plt.plot(j, erp4, 'o')
+        plt.plot(j, erp5, 'o')
+        plt.legend([o_bstar, new_drag1, new_drag2, new_drag3, new_drag4], fontsize = 'large')
+        plt.plot(j, erp1, 'b-')
+        plt.title(r'Norm of $\delta r (in  \%)$', fontdict = {'fontsize':24})
+        plt.xlabel(r'Hours  $\rightarrow$', fontdict = {'fontsize':15})        
+        plt.ylabel(r'$\frac{|\delta r| \times 100}{|R|}$', fontdict = {'fontsize':22} )
+        plt.grid()
+        plt.show()
+
+        plt.figure()
+        plt.plot(j, evp1,'o')
+        plt.plot(j, evp2,'o')
+        plt.plot(j, evp3,'o')
+        plt.plot(j, evp4,'o')
+        plt.plot(j, evp5,'o')
+        plt.title(r'Norm of $\delta v (in  \%)$', fontdict = {'fontsize':24})
+        plt.legend([o_bstar, new_drag1, new_drag2, new_drag3, new_drag4], fontsize = 'large')
+        plt.plot(j, evp1,'b-')        
         plt.xlabel(r'Hours $\rightarrow$', fontdict = {'fontsize':15})
         plt.ylabel(r'$\frac{|\delta v| \times 100} {|V|}$', fontdict = {'fontsize':22})
         plt.grid()
