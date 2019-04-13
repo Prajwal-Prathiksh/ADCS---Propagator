@@ -469,3 +469,6 @@ tleINS_full = ['1 43116U 18004F   19001.16590137  .00001037  00000-0  47467-4 0 
                 '2 43116  97.5042 140.4941 0008663 218.7353 141.3263 15.22885488 64707']
 
 tle_2018_complete = rins.tle_2018
+pratham_tle_complete = rins.pratham_tle_2018
+pisat_tle_complete = rins.pisat_tle_2018
+niusat_tle_complete = rins.niusat_tle_2018
