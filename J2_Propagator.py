@@ -3,7 +3,7 @@ import numpy as np
 
 #-----Differential Equation - Function------
 #        d(x1) = x2
-#        -----
+#        -----           ,    x1 = r,   x2 = v
 #         dt        
 
 def f1(r, vel):   
@@ -14,7 +14,7 @@ def f1(r, vel):
 
 #-----Differential Equation - Function-s----
 #        d(x2) =  -u . x1       P             P 
-#        -----    -------   +     oblate  +     drag
+#        -----    -------   +     oblate  +     drag      , x1 = r, x2 = v
 #         dt       (x1)^3   
 def f2(r,vel):   
     if dragBoolean == True:
@@ -22,9 +22,10 @@ def f2(r,vel):
         p_d    = drag(r,vel)
         accltn =(((-mu/((norm(r))**3)))*r) + p_o  + p_d 
         return accltn 
-    p_o    = oblate_pertubations(r)
-    accltn =(((-mu/((norm(r))**3)))*r) + p_o 
-    return accltn   
+    else:
+        p_o    = oblate_pertubations(r)
+        accltn =(((-mu/((norm(r))**3)))*r) + p_o 
+        return accltn   
     
 
 
@@ -53,22 +54,26 @@ def drag(r,vel):
     return p
 
 
-#-----Calulates The Atomosphereic Density from a given standard set of values-----
-#      which correspond to the object's height above sea level
-#-----Needs Updation with regards to the Implementation------------------------
-def density(r):    
-    data = loadtxt('atmospheric_data.txt')
-    data = data.T
-    height_data = list(data[0])
-    density_data = (data[1])*1000
-    distance = norm(r) - Radius_Earth
-    if distance>1000:
-        density = 0
-    else:
-        ind = height_data.index(round(distance,-1))
-        density = density_data[ind]
-    return density
+#-----Calulates the atomosphereic density from a model based on 
+#       exponential decay, where the input is the height
+#           of the satellite from surface of the Earth,
+#      and the output is density of the atmosphere in kg/m^-3
+#  NOTE: The model is made specifically for LEO, i.e, h ranging from 200km to 1000km.
+
+def density(r):
+    h = norm(r) - Radius_Earth
     
+    I = -64.2977230723439
+    beta = 0.009731421943985435
+    alpha1 = 16512.332470155176
+    alpha2 = -3075224.979057692
+    alpha3 = 219139160.02096748
+    alpha4 = 2990292.8143278994 
+    
+    rho = np.exp(I + beta*h + alpha1/h + alpha2/h**2 + alpha3/h**3 + alpha4/h**4 )
+    return rho
+
+
 
 #-----The Propogator involved in the Orbit Modelling that uses the-----
 #         Initial State Vectors and RK - 4 to approximate the 
