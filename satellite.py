@@ -85,6 +85,8 @@ class satellite:
         """Propogate the State Variables through both SGP4 and J2 propagators,
            and returns the R,V - values in SGP4, and J2 in that order, i.e,
            R - SGP4, V - SGP4, R - J2, V - J2.
+           
+           NOTE: BY DEFAULT DRAG == FALSE!!           
                
            Parameters:
            -----------
@@ -93,7 +95,7 @@ class satellite:
                to be propagated, in terms of delta - time, in hours.  
         """ 
         rsgp, vsgp = self.sgpPropagate(self.jddate + (deltatime/24))
-        rj2, vj2 = j2.propagate(self.r_init, self.v_init, deltatime*3600, h_step_size = 1) 
+        rj2, vj2 = j2.propagate(self.r_init, self.v_init, deltatime*3600, h_step_size = 1, drag = False) 
         return rsgp, vsgp, rj2, vj2
     
     
@@ -108,167 +110,142 @@ def mock_runs(ch):
            ch: integer
                Takes the input of the choice. 
 
-           Notes:
+           Notes: 
            ------
-           1: Block of Code that plots the error in norm of delta-r, delta-v
-              w.r.t the propagated state values (The initial states for 
-              this obtained from TLE - 1 (sat1) and the predicted state 
-              values from a later TLE - 2 (sat2).
+           Purpose of each integer input :-
 
-           2: Block of code that prints the Propagated R, V state vectors
-              from SGP4 and J2 from TLE - 1, along with the Initial state 
-              vectors generated from TLE2. It also calculates the error in 
-              norm of delta R and delta V for both SGP4 and J2 against the 
-              initial state vectors.
+           1: Compares propagated J2 & SGP4 state vectors from TLE - 1 (sat1), 
+              to the expected state vectors of (t = 0) from TLE -2 (sat2).
+              Input:
+                - TLE (sat2)    : Can be changed FROM WITHIN the code only, by changing (i).
+              Output: 
+                - SGP4          : Propagated state vectors
+                - J2            : Propagated state vectors
+                - TLE - 2       : Predicted state vectors
+                - Norm Errors   : B/w J2 - TLE2 and SGP4 - TLE2
 
-           3: Block of code that prints the Percentage Error in the norm of
-              delta R, and V divided by the norm of corresponding R or V 
-              of SGP4, over a given time interval.
+           2: Plots the difference between the propagted vectors from SGP4 
+              and J2 (sat1), over a time duration.
+              Input:
+                - Time Duration : In Hrs.
+                - TLE (sat1)    : Can be changed FROM WITHIN the code only, by changing (i).
+              Output:
+                - Plot - 1      : Norm of difference between the position vectors.
+                - Plot - 2      : Norm of difference between the velocity vectors.
 
-           4: Block of Code that plots the error in norm of delta-r, delta-v
-              w.r.t the propagated state values (The initial states for 
-              this obtained from TLE - 1 (sat1) and the predicted state 
-              values from a later TLE - 2 (sat2).
-              NOTE: This works on the complete data set of TLE's available
+           3: Plots the norm error in propagated state vectors of SGP4 and 
+              J2 from a TLE - 1 (sat1), w.r.t the expected state vectors of (t = 0)
+              from a later TLE - 2 (sat2), by keeping a FIXED TLE 1 (sat1), and
+              comparing with successive TLEs (sat2) for a range of TLEs.
+              Input:
+                - TLE (sat1 & sat2) : Can only be changed WITHIN the code, by changing range of (j).
+              Output:
+                - Plot - 1      : Norm of difference between the position vectors.
+                - Plot - 2      : Norm of difference between the velocity vectors.
+                - Plot - 3      : Norm difference in the postion vectors, in (%).
+                - Plot - 4      : Norm difference in the velocity vectors, in (%).
 
-           5: Block of code that plots the error in SGP4 propagation,
-              by changing the values of BSTAR term in TLE-1, and comparing
-              the propagated state vectors to the Initial state vectors
-              predicted by TLE.
+           4: Plots the norm error in propagated state vectors of SGP4 ONLY, 
+              between that of a FIXED TLE - 1 to the expected state vectors 
+              of (t = 0) from TLE -2 (satf), by creating multiple instances
+              of the same TLE - 1 (sat2, sat3, ... , sat5), but with different
+              BSTAR values, to check for the variation in SGP4 propagation 
+              w.r.t the BSTAR term.
+              Input:
+                - Iterations - Range    : Can be changed from FROM WITHIN the code only,
+                                          by changing (iterations).
+                - Initial TLE (sat1, ..., sat5)   : Can be changed FROM WITHIN the code only,
+                                                    by changing (tle_num).
+              Output:
+                - Plot - 1      : Norm difference in the postion vectors, in (%), of sat1, ... , sat5.
+                - Plot - 2      : Norm difference in the velocity vectors, in (%), of sat1, ... , sat5.
     """ 
     
-    #----- i takes int-values from 1 to 7, and corresonds to-----
-    #            TLEs of older times as i increases .
-    i = 1
-
 
     if ch == 1:
+        #----- i takes int-values from 1 to 1374, and -----
+        #     corresonds to newer TLEs as i increases.
+        i = 2
 
-        erj2, evj2 = [], []
-        ers, evs = [], []
-        erj2p, evj2p = [], []
-        ersp, evsp = [], []
-        j = range(1,3)
-        for i in j:
-            l21, l22 = tc.tleINS[0:2]
-            l11, l12 = tc.tleINS[2*i:2*i+2]
-            sat1 = satellite(l11,l12)
-            sat2 = satellite(l21,l22)
-            
-            deltaT = (sat2.jddate - sat1.jddate)*24
-            rs,vs,rj,vj = sat1.comparej2Vsgp(deltaT)
-            print('Time(Hrs):', np.round(deltaT,2))
-            
-            R,V = sat2.r_init, sat2.v_init
-            erj2.append( (j2.norm(rj - R)) )
-            evj2.append( (j2.norm(vj - V )) )
-            ers.append( j2.norm(rs - R))
-            evs.append( j2.norm(vs - V))
-            
-            erj2p.append( 100*(j2.norm(rj - R))/j2.norm(R) )
-            evj2p.append( 100*(j2.norm(vj - V ))/j2.norm(V) )
-            ersp.append( 100*j2.norm(rs - R)/j2.norm(R))
-            evsp.append( 100*j2.norm(vs - V)/j2.norm(V))        
-        
-        plt.plot(j, erj2,'bo')
-        plt.plot(j, ers, 'ro')
-        plt.legend(["Error Position- J2", "Error Position - SGP4"], fontsize = 'large')
-        plt.plot(j, erj2, 'b--')
-        plt.plot(j, ers, 'r--')
-        plt.title(r'Norm of $\delta r$', fontdict = {'fontsize':20})
-        plt.xlabel(r'Iterations $\rightarrow$', fontdict = {'fontsize':15})
-        plt.ylabel(r'$\delta r (kms) \rightarrow$', fontdict = {'fontsize':15})
-        plt.grid()
-        plt.show()
-        plt.figure()
-        plt.plot(j, evj2,'bo')
-        plt.plot(j, evs,'ro')
-        plt.title(r'Norm of $\delta v$', fontdict = {'fontsize':20})
-        plt.legend(["Error Velocity - J2", "Error Velocity - SGP4"], fontsize='large')
-        plt.plot(j, evj2,'b--')
-        plt.plot(j, evs,'r--')
-        plt.xlabel(r'Iterations $\rightarrow$', fontdict = {'fontsize':15})
-        plt.ylabel(r'$\delta v (km/s) \rightarrow$', fontdict = {'fontsize':15})
-        plt.grid()
-        plt.show()
-        plt.figure()
-        plt.plot(j, erj2p, 'bo')
-        plt.plot(j, ersp, 'ro')
-        plt.legend(["Error Position- J2", "Error Position - SGP4"], fontsize = 'large')
-        plt.title(r'Norm of $\delta r (in  \%)$', fontdict = {'fontsize':24})
-        plt.xlabel(r'Iterations  $\rightarrow$', fontdict = {'fontsize':15})
-        plt.plot(j, erj2p, 'b--')
-        plt.plot(j, ersp, 'r--')
-        plt.ylabel(r'$\frac{|\delta r| \times 100}{|R|}$', fontdict = {'fontsize':22} )
-        plt.grid()
-        plt.show()
-        plt.figure()
-        plt.plot(j, evj2p,'bo')
-        plt.plot(j, evsp,'ro')
-        plt.title(r'Norm of $\delta v (in  \%)$', fontdict = {'fontsize':24})
-        plt.legend(["Error Velocity - J2", "Error Velocity - SGP4"], fontsize = 'large')
-        plt.plot(j, evj2p,'b--')
-        plt.plot(j, evsp,'r--')
-        plt.xlabel(r'Iterations $\rightarrow$', fontdict = {'fontsize':15})
-        plt.ylabel(r'$\frac{|\delta v| \times 100} {|V|}$', fontdict = {'fontsize':22})
-        plt.grid()
-        plt.show()
-
-    elif ch == 2:
-
-        l21, l22 = tc.tleINS[0:2]
-        l11, l12 = tc.tleINS[2*i:2*i+2]
+        l21, l22 = tc.tle_2018_complete[0:2]
+        l11, l12 = tc.tle_2018_complete[2*i:2*i+2]
         sat1 = satellite(l11,l12)
         sat2 = satellite(l21,l22)
+
         deltaT = (sat2.jddate - sat1.jddate)*24
         rs,vs,rj,vj = sat1.comparej2Vsgp(deltaT)
         R,V = sat2.r_init, sat2.v_init
-        print('SGP4 ---> ', rs, vs, ' ---- ', sat1.gregdate)
-        print('J2 -----> ',rj,vj)
-        print('Obs ----> ', R, V, ' ---- ', sat2.gregdate)
+
+        print('SGP4 (Propagated R & V) ---> ', rs, vs, ' ---- ', sat1.gregdate)
+        print('J2 (Propagated R & V) -----> ',rj,vj)
+        print('Obs (TLE - 2 R & V) ----> ', R, V, ' ---- ', sat2.gregdate)
+
         erj2, evj2 = j2.norm(rj - R), j2.norm(vj - V)
         ers, evs = j2.norm(rs - R), j2.norm(vs - V)
+
         print('Error - R (J2) = ', erj2, '       Error - V(J2) = ',evj2)
         print()
         print('Error - R (SGP4) = ', ers, '       Error - V(SGP4) = ',evs)
 
-    elif ch == 3:
+    elif ch == 2:
+        #----- i takes int-values from 0 to 1374, and -----
+        #     corresonds to newer TLEs as i increases.
+        i = 0
+
+        hours = float(input('Enter Time Duration (in Hrs.): '))
+        #Accepting Time Duration Input.
 
         ERJ, EVJ = [], []
         ERS, EVS = [], []
-        l21, l22 = tc.tleINS[0:2]
-        l11, l12 = tc.tleINS[2*i:2*i+2]
+        l11, l12 = tc.tle_2018_complete[2*i:2*i+2]
         sat1 = satellite(l11,l12)
-        sat2 = satellite(l21,l22)
-        hours = 4 #Set time duration
+        
         scale = np.arange(0,3600*hours,220)
         for deltaT in scale:
             deltaT=deltaT/3600
             rs,vs,rj,vj = sat1.comparej2Vsgp(deltaT)
-            erj2, evj2 = j2.norm(rj - rs)/j2.norm(rs), j2.norm(vj - vs)/j2.norm(vs)
-            ERJ.append(erj2*100)
-            EVJ.append(evj2*100)
+            erj2, evj2 = j2.norm(rj - rs), j2.norm(vj - vs)
+            ERJ.append(erj2)
+            EVJ.append(evj2)
         plt.plot(scale, ERJ,'o')
-        plt.plot(scale,EVJ,'o')
-        plt.legend(['Error - r', 'Error - v'])
-        plt.title('Error - Position, Velocity')
-        plt.xlabel('Time (seconds) ---->')
-        plt.ylabel('Error (%): (norm(delta vector)/norm(final vector)) * 100:')
+        plt.legend(['Difference - r'])
+        plt.title('Difference Norm - Position Vector', fontsize = 30)
+        plt.xlabel(r'Time (seconds) $\rightarrow$', fontsize = 25)
+        plt.ylabel(r'$ | \vec{r_{SGP4}} - \vec{r_{J2}}|$', fontsize = 25)
         plt.show()
+        plt.grid()
+        
+        plt.figure()
+        plt.plot(scale,EVJ,'o')
+        plt.title('Difference Norm - Velocity Vector', fontsize = 30)
+        plt.legend(['Difference - v'])
+        plt.xlabel(r'Time (seconds) $\rightarrow$', fontsize = 25)
+        plt.ylabel(r'$ | \vec{v_{SGP4}} - \vec{v_{J2}}|$', fontsize = 25)
+        plt.show()
+        plt.grid()
 
-    elif ch == 4:
+    elif ch == 3:
+        #----- (j) represents the range of TLEs over which the  -----
+        #    program will compare the propagated state vectors from
+        #     TLE - j[0]  with the TLEs represented by succesive 
+        #                      elements of (j).
+        j = range(0,2,1)
 
+        # Declaring lists that will store the error values.
         erj2, evj2 = [], []
         ers, evs = [], []
         erj2p, evj2p = [], []
         ersp, evsp = [], []
-        j = range(0,101,5)
+        
         t_axis = []
-        for i in j:
-            t = 1
-            l11, l12 = tc.tle_2018_complete[(t-1)*2:t*2]
-            l21, l22 = tc.tle_2018_complete[2*i:2*i+2]
-            sat1 = satellite(l11,l12)
+
+        t = j[0]
+        l11, l12 = tc.tle_2018_complete[t*2 : t*2+2]
+        sat1 = satellite(l11,l12)
+
+        for i in j:            
+
+            l21, l22 = tc.tle_2018_complete[2*i : 2*i+2]            
             sat2 = satellite(l21,l22)
             
             deltaT = (sat2.jddate - sat1.jddate)*24
@@ -334,29 +311,36 @@ def mock_runs(ch):
         plt.grid()
         plt.show()
 
-    elif ch == 5:
+    elif ch == 4:
+        #----- (iterations) represents the range of TLEs over which the  -----
+        #         program will compare the propagated state vectors.
+        iterations = range(0,100,5)
 
+        # Declaring lists that will store the error values.
         er1, ev1, erp1, evp1 = [], [], [], []
         er2, ev2, erp2, evp2 = [], [], [], []
         er3, ev3, erp3, evp3 = [], [], [], []
         er4, ev4, erp4, evp4 = [], [], [], []
         er5, ev5, erp5, evp5 = [], [], [], []
-        j = range(0,100,5)
+
+        tle_num= 460
+        #tle_num = 260       
+
         t_axis = []
-        for i in j:
-            num = 460
-            temp = tc.pratham_tle_complete[num:num+2]
+        for i in iterations:
+
+            temp = tc.pratham_tle_complete[tle_num:tle_num+2]
             l11_0, l12 = temp
-            l21, l22 = tc.pratham_tle_complete[(num + 2*i): (num + 2*i+2)]
+            l21, l22 = tc.pratham_tle_complete[(tle_num + 2*i): (tle_num + 2*i+2)]
 
             sat1 = satellite(l11_0,l12)
             satf = satellite(l21,l22)
 
             init_drag = l11_0[54:61]
-            new_drag1 = '00000+0'
-            new_drag2 = '27678-4' 
-            new_drag3 = '89564-5'
-            new_drag4 = '78954-3'
+            new_drag1 = '25100-4'
+            new_drag2 = '27000-4' 
+            new_drag3 = '46000-4'
+            new_drag4 = '78000-3'
 
             l11_1 = l11_0.replace(init_drag, new_drag1)
             l11_2 = l11_0.replace(init_drag, new_drag2)
