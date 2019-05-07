@@ -33,25 +33,40 @@ def f2(r,vel):
 #			 through J2 Model
     
 def oblate_pertubations(post):   
+    '''
+        J2 Perturbations: Pg 664 HD Curtis
+        
+    '''
     r = norm(post)
-    const_J2 = (1.5*J2*mu*Radius_Earth**2)/((r**7))
+    const_J2 = (1.5*J2*mu*Radius_Earth**2) / (r**4)
     z = post[2]
-    k = (5*(z*z) - (r*r))
-    temp = (np.array([k, k, (k-2*r*r)]))*const_J2
-    p = post*temp
-    return (p)
+    x, y, z = post
+    k = ((  5*((z/r)**2)  - 1 )/r)
+    
+    p = np.array([x*k,  y*k,  z*((  5*((z/r)**2)  - 3 )/r)])
+    p = p*const_J2
+    return p
 
 
 
 #-----Calculates the Pertubations from the Effects of Atmospheric Drag-----    
-def drag(r,vel):    
+def drag(r,vel):  
+    '''
+        Assuming velocity of atmosphere at a particular point,
+        is appx. equal to cross product of angular velocity of Earth 
+        and position vector of that point.
+    '''
+    vel = np.array(vel, dtype = np.float64)*1000 #Converting to m/s
+    r = np.array(r, dtype = np.float64) * 1000 #Converting to m
+    
     v_atm = np.cross(w_angular_vel,r)
-    v_rel = vel - v_atm
+    v_rel = vel - v_atm #Relative velocity being calculated.
     uv = v_rel/norm(v_rel)
-    denst = density(r)
-    p_scalar = (-0.5) * denst * uv * 1000*norm(v_rel)**2
-    p = p_scalar/1000
-    return p
+    
+    denst = density(r/1000) #Requires argument in Km
+    p = (-0.5) * denst * uv * norm(v_rel)**2 #Accleration in m/s
+    return (p/1000) #Returning Accleration in km/s
+
 
 
 #-----Calulates the atomosphereic density from a model based on 
@@ -61,17 +76,13 @@ def drag(r,vel):
 #  NOTE: The model is made specifically for LEO, i.e, h ranging from 200km to 1000km.
 
 def density(r):
-    h = norm(r) - Radius_Earth
+    h = norm(r) - Radius_Earth #Appx height of satellite from surface of Earth.
     
-    I = -64.2977230723439
-    beta = 0.009731421943985435
-    alpha1 = 16512.332470155176
-    alpha2 = -3075224.979057692
-    alpha3 = 219139160.02096748
-    alpha4 = 2990292.8143278994 
+    I, alpha1, alpha2, alpha3, alpha4, beta = (-54.23161450332475,  22123.13823106815, -6906047.242456764, 
+                                                           1057730365.397583, -61951792129.727295, 0.004345148162663792)
     
-    rho = np.exp(I + beta*h + alpha1/h + alpha2/h**2 + alpha3/h**3 + alpha4/h**4 )
-    return rho
+    rho = np.exp(I + beta*h + alpha1/h + alpha2/(h**2) + alpha3/(h**3) + alpha4/(h**4) )
+    return rho #In kg/m^3
 
 
 
@@ -161,6 +172,8 @@ def RK4_d(r,vel,cx,cy,h):
     return dx,dy
     
 def norm(arr):
+    ''' Calculates 2-norm of a vector.
+    '''
     return (arr[0]**2 + arr[1]**2 + arr[2]**2)**0.5
     
 
@@ -169,9 +182,9 @@ def norm(arr):
 #-----Values of Orbital Constants being assigned-----
 mu = 398600.4415
 J2 = 1.082635854e-3 
-w_angular_vel = np.array([0,0,7.2921156e-5])
+w_angular_vel = np.array([0,0,7.2921156e-5]) #Radians/sec
 c_drag = 2
-area = 0.01
-mass = 0.9
+area = 0.01 #In m^3
+mass = 0.9 #In Kg
 Radius_Earth = 6378.1363          #In Km.
 B = (c_drag*area)/mass
