@@ -61,10 +61,9 @@ def drag(r,vel):
     
     v_atm = np.cross(w_angular_vel,r)
     v_rel = vel - v_atm #Relative velocity being calculated.
-    uv = v_rel/norm(v_rel)
     
     denst = density(r/1000) #Requires argument in Km
-    p = (-0.5) * denst * uv * norm(v_rel)**2 #Accleration in m/s
+    p = (-0.5) * denst * norm(v_rel) * B_coeff * v_rel #Accleration in m/s
     return (p/1000) #Returning Accleration in km/s
 
 
@@ -187,4 +186,4 @@ c_drag = 2
 area = 0.01 #In m^3
 mass = 0.9 #In Kg
 Radius_Earth = 6378.1363          #In Km.
-B = (c_drag*area)/mass
+B_coeff = (c_drag*area)/mass
