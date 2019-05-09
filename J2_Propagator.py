@@ -77,10 +77,9 @@ def drag(r,vel):
 def density(r):
     h = norm(r) - Radius_Earth #Appx height of satellite from surface of Earth.
     
-    I, alpha1, alpha2, alpha3, alpha4, beta = (-54.23161450332475,  22123.13823106815, -6906047.242456764, 
-                                                           1057730365.397583, -61951792129.727295, 0.004345148162663792)
+    I, alpha1, alpha2, alpha3, beta = (-55.80854359317351, 17771.64895643925, -3718462.067004107, 291861748.7626916,0.008582907557446885)
     
-    rho = np.exp(I + beta*h + alpha1/h + alpha2/(h**2) + alpha3/(h**3) + alpha4/(h**4) )
+    rho = np.exp(I + beta*h + alpha1/h + alpha2/(h**2) + alpha3/(h**3) )
     return rho #In kg/m^3
 
 
