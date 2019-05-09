@@ -81,7 +81,7 @@ class satellite:
         position, velocity = twoline2rv(self.line1, self.line2,wgs72).propagate(y,mont,d,h,m,s)
         return np.array(position, np.float64), np.array(velocity, np.float64)
         
-    def comparej2Vsgp(self,deltatime):
+    def comparej2Vsgp(self,deltatime, drag_boolean = False):
         """Propogate the State Variables through both SGP4 and J2 propagators,
            and returns the R,V - values in SGP4, and J2 in that order, i.e,
            R - SGP4, V - SGP4, R - J2, V - J2.
@@ -90,12 +90,16 @@ class satellite:
                
            Parameters:
            -----------
-           deltatime: floating-point number, optional
+           deltatime: floating-point number,
                Takes in the time period over which the state vectors have 
-               to be propagated, in terms of delta - time, in hours.  
+               to be propagated, in terms of delta - time, in hours. 
+           
+           drag_boolean : boolean, optional,
+                Sets the drag perturbating factor to either True/False in J2.
+                Default = False
         """ 
         rsgp, vsgp = self.sgpPropagate(self.jddate + (deltatime/24))
-        rj2, vj2 = j2.propagate(self.r_init, self.v_init, deltatime*3600, h_step_size = 1, drag = False) 
+        rj2, vj2 = j2.propagate(self.r_init, self.v_init, deltatime*3600, h_step_size = 1, drag = drag_boolean) 
         return rsgp, vsgp, rj2, vj2
     
     
@@ -134,11 +138,13 @@ def mock_runs(ch):
                 - Plot - 2      : Norm of difference between the velocity vectors.
 
            3: Plots the norm error in propagated state vectors of SGP4 and 
-              J2 from a TLE - 1 (sat1), w.r.t the expected state vectors of (t = 0)
-              from a later TLE - 2 (sat2), by keeping a FIXED TLE 1 (sat1), and
-              comparing with successive TLEs (sat2) for a range of TLEs.
+              J2 (including and exclding drag) from a TLE - 1 (sat1), w.r.t the 
+              expected state vectors of (t = 0) from a later TLE - 2 (sat2),
+              by keeping a FIXED TLE 1 (sat1), and comparing with successive 
+              TLEs (sat2) for a range of TLEs.
               Input:
                 - TLE (sat1 & sat2) : Can only be changed WITHIN the code, by changing range of (j).
+            
               Output:
                 - Plot - 1      : Norm of difference between the position vectors.
                 - Plot - 2      : Norm of difference between the velocity vectors.
@@ -229,92 +235,111 @@ def mock_runs(ch):
         #    program will compare the propagated state vectors from
         #     TLE - j[0]  with the TLEs represented by succesive 
         #                      elements of (j).
-        j = range(0,2,1)
+        j = range(0,8)
 
         # Declaring lists that will store the error values.
-        erj2, evj2 = [], []
+        erj2_nd, evj2_nd = [], []
+        erj2_d, evj2_d = [], []
         ers, evs = [], []
-        erj2p, evj2p = [], []
+        erj2p_nd, evj2p_nd = [], []
+        erj2p_d,evj2p_d = [], [] 
         ersp, evsp = [], []
         
         t_axis = []
 
         t = j[0]
-        l11, l12 = tc.tle_2018_complete[t*2 : t*2+2]
+        l11, l12 = tc.pratham_tle_complete[t*2 : t*2+2]
         sat1 = satellite(l11,l12)
 
         for i in j:            
 
-            l21, l22 = tc.tle_2018_complete[2*i : 2*i+2]            
+            l21, l22 = tc.pratham_tle_complete[2*i : 2*i+2]            
             sat2 = satellite(l21,l22)
             
             deltaT = (sat2.jddate - sat1.jddate)*24
-            rs,vs,rj,vj = sat1.comparej2Vsgp(deltaT)
+            rs,vs,rjd,vjd = sat1.comparej2Vsgp(deltaT, drag_boolean=True)
+            rs,vs,rjnd,vjnd = sat1.comparej2Vsgp(deltaT, drag_boolean=False)
             print('Time(Hrs):', np.round(deltaT,2))
             t_axis.append(np.round(deltaT,2))
             
             R,V = sat2.r_init, sat2.v_init
-            erj2.append( (j2.norm(rj - R)) )
-            evj2.append( (j2.norm(vj - V )) )
+            erj2_nd.append( (j2.norm(rjnd - R)) )
+            evj2_nd.append( (j2.norm(vjnd - V )) )
+            evj2_d.append( (j2.norm(vjd - V )) )
+            erj2_d.append( (j2.norm(rjd - R)) )
             ers.append( j2.norm(rs - R))
             evs.append( j2.norm(vs - V))
             
-            erj2p.append( 100*(j2.norm(rj - R))/j2.norm(R) )
-            evj2p.append( 100*(j2.norm(vj - V ))/j2.norm(V) )
+            erj2p_nd.append( 100*(j2.norm(rjnd - R))/j2.norm(R) )
+            evj2p_nd.append( 100*(j2.norm(vjnd - V ))/j2.norm(V) )
+            erj2p_d.append( 100*(j2.norm(rjd - R))/j2.norm(R) )
+            evj2p_d.append( 100*(j2.norm(vjd - V ))/j2.norm(V) )
             ersp.append( 100*j2.norm(rs - R)/j2.norm(R))
             evsp.append( 100*j2.norm(vs - V)/j2.norm(V))  
             
             
         
         j = t_axis
-        plt.plot(j, erj2,'bo')
-        plt.plot(j, ers, 'ro')
-        plt.legend(["Error Position- J2", "Error Position - SGP4"], fontsize = 'large')
-        plt.plot(j, erj2, 'b--')
+        
+        plt.plot(j, erj2_nd,'bo', label = 'Error Position - J2 (No Drag)')
+        plt.plot(j, erj2_d, 'go', label = 'Error Position - J2 (Drag)')
+        plt.plot(j, ers, 'ro', label = 'Error Position - SGP4') 
+        plt.legend(fontsize = 'large')
+        plt.plot(j, erj2_nd, 'b--')
+        plt.plot(j, erj2_d, 'g--')
         plt.plot(j, ers, 'r--')
         plt.title(r'Norm of $\delta r$', fontdict = {'fontsize':20})
         plt.xlabel(r'Hours $\rightarrow$', fontdict = {'fontsize':15})
         plt.ylabel(r'$\delta r (kms) \rightarrow$', fontdict = {'fontsize':15})
         plt.grid()
         plt.show()
+        
         plt.figure()
-        plt.plot(j, evj2,'bo')
-        plt.plot(j, evs,'ro')
+        plt.plot(j, evj2_nd,'bo', label = "Error Velocity - J2 (No Drag)")
+        plt.plot(j, evj2_d,'go', label = "Error Velocity - J2 (Drag)")
+        plt.plot(j, evs,'ro', label = "Error Velocity - SGP4")
         plt.title(r'Norm of $\delta v$', fontdict = {'fontsize':20})
-        plt.legend(["Error Velocity - J2", "Error Velocity - SGP4"], fontsize='large')
-        plt.plot(j, evj2,'b--')
+        plt.legend(fontsize='large')
+        plt.plot(j, evj2_nd,'b--')
+        plt.plot(j, evj2_d,'g--')
         plt.plot(j, evs,'r--')
         plt.xlabel(r'Hours $\rightarrow$', fontdict = {'fontsize':15})
         plt.ylabel(r'$\delta v (km/s) \rightarrow$', fontdict = {'fontsize':15})
         plt.grid()
         plt.show()
+        
         plt.figure()
-        plt.plot(j, erj2p, 'bo')
-        plt.plot(j, ersp, 'ro')
-        plt.legend(["Error Position- J2", "Error Position - SGP4"], fontsize = 'large')
+        plt.plot(j, erj2p_nd, 'bo', label = 'Error Position - J2 (No Drag)')
+        plt.plot(j, erj2p_d, 'go', label = 'Error Position - J2 (Drag)')
+        plt.plot(j, ersp, 'ro', label = 'Error Position - SGP4')
+        plt.legend(fontsize = 'large')
         plt.title(r'Norm of $\delta r (in  \%)$', fontdict = {'fontsize':24})
         plt.xlabel(r'Hours  $\rightarrow$', fontdict = {'fontsize':15})
-        plt.plot(j, erj2p, 'b--')
+        plt.plot(j, erj2p_nd, 'b--')
+        plt.plot(j, erj2p_d, 'g--')
         plt.plot(j, ersp, 'r--')
-        plt.ylabel(r'$\frac{|\delta r| \times 100}{|R|}$', fontdict = {'fontsize':22} )
+        plt.ylabel(r'$\frac{|\delta r| \times 100}{|R|} (in \%) \rightarrow$', fontdict = {'fontsize':22} )
         plt.grid()
         plt.show()
+        
         plt.figure()
-        plt.plot(j, evj2p,'bo')
-        plt.plot(j, evsp,'ro')
+        plt.plot(j, evj2p_nd,'bo', label = "Error Velocity - J2 (No Drag)")
+        plt.plot(j, evj2p_d,'go', label = "Error Velocity - J2 (Drag)")
+        plt.plot(j, evsp,'ro', label = "Error Velocity - SGP4")
         plt.title(r'Norm of $\delta v (in  \%)$', fontdict = {'fontsize':24})
-        plt.legend(["Error Velocity - J2", "Error Velocity - SGP4"], fontsize = 'large')
-        plt.plot(j, evj2p,'b--')
+        plt.legend(fontsize = 'large')
+        plt.plot(j, evj2p_nd,'b--')
+        plt.plot(j, evj2p_d,'g--')
         plt.plot(j, evsp,'r--')
         plt.xlabel(r'Hours $\rightarrow$', fontdict = {'fontsize':15})
-        plt.ylabel(r'$\frac{|\delta v| \times 100} {|V|}$', fontdict = {'fontsize':22})
+        plt.ylabel(r'$\frac{|\delta v| \times 100} {|V|} (in \%) \rightarrow$', fontdict = {'fontsize':22})
         plt.grid()
         plt.show()
 
     elif ch == 4:
         #----- (iterations) represents the range of TLEs over which the  -----
         #         program will compare the propagated state vectors.
-        iterations = range(0,100,5)
+        iterations = range(0,30,2)
 
         # Declaring lists that will store the error values.
         er1, ev1, erp1, evp1 = [], [], [], []
@@ -329,9 +354,9 @@ def mock_runs(ch):
         t_axis = []
         for i in iterations:
 
-            temp = tc.pratham_tle_complete[tle_num:tle_num+2]
+            temp = tc.pisat_tle_complete[tle_num:tle_num+2]
             l11_0, l12 = temp
-            l21, l22 = tc.pratham_tle_complete[(tle_num + 2*i): (tle_num + 2*i+2)]
+            l21, l22 = tc.pisat_tle_complete[(tle_num + 2*i): (tle_num + 2*i+2)]
 
             sat1 = satellite(l11_0,l12)
             satf = satellite(l21,l22)
@@ -406,7 +431,7 @@ def mock_runs(ch):
         plt.plot(j, erp1, 'b-')
         plt.title(r'Norm of $\delta r (in  \%)$', fontdict = {'fontsize':24})
         plt.xlabel(r'Hours  $\rightarrow$', fontdict = {'fontsize':15})        
-        plt.ylabel(r'$\frac{|\delta r| \times 100}{|R|}$', fontdict = {'fontsize':22} )
+        plt.ylabel(r'$\frac{|\delta r| \times 100}{|R|} (in \%) \rightarrow$', fontdict = {'fontsize':22} )
         plt.grid()
         plt.show()
 
@@ -420,6 +445,6 @@ def mock_runs(ch):
         plt.legend([o_bstar, new_drag1, new_drag2, new_drag3, new_drag4], fontsize = 'large')
         plt.plot(j, evp1,'b-')        
         plt.xlabel(r'Hours $\rightarrow$', fontdict = {'fontsize':15})
-        plt.ylabel(r'$\frac{|\delta v| \times 100} {|V|}$', fontdict = {'fontsize':22})
+        plt.ylabel(r'$\frac{|\delta v| \times 100} {|V|} (in \%) \rightarrow$', fontdict = {'fontsize':22})
         plt.grid()
         plt.show()
