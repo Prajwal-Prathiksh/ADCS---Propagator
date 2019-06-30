@@ -1,97 +1,155 @@
 import numpy as np
 
+#-----Values of Orbital Constants being assigned-----
+MU = 398600.4415
+J2 = 1.082635854e-3 
+ANGULAR_VELOCITY_EARTH = np.array([0,0,7.2921156e-5]) #Radians/sec
+C_DRAG = 2
+AREA = 0.01 #In m^3
+SATELLITE_MASS = 0.9 #In Kg
+RADIUS_EARTH = 6378.1363          #In Km.
+B_COEFF = (C_DRAG*AREA)/SATELLITE_MASS
 
-#-----Differential Equation - Function------
-#        d(x1) = x2
-#        -----           ,    x1 = r,   x2 = v
-#         dt        
+def f1(pos, vel): 
+    '''Differential Equation - Function:
+          d(x1) = x2
+          -----           ,    x1 = pos,   x2 = v
+           dt     
 
-def f1(r, vel):   
-    post = vel
-    return post
+        Parameters:
+        -----------
+        pos: array
+                This initializes the position state variable.
+        vel: array
+                This initializes the velocity state variable.
 
+        Output:
+        -------
+        Returns instantaneous derivative of position.
+    '''  
 
+    pos = vel
+    return pos
 
-#-----Differential Equation - Function-s----
-#        d(x2) =  -u . x1       P             P 
-#        -----    -------   +     oblate  +     drag      , x1 = r, x2 = v
-#         dt       (x1)^3   
-def f2(r,vel):   
-    if dragBoolean == True:
-        p_o    = oblate_pertubations(r)
-        p_d    = drag(r,vel)
-        accltn =(((-mu/((norm(r))**3)))*r) + p_o  + p_d 
-        return accltn 
+def f2(pos,vel):
+    '''Differential Equation - Function:
+          d(x2) =  -u . x1       P             P 
+          -----    -------   +     oblate  +     drag      , x1 = r, x2 = v
+           dt       (x1)^3   
+
+        Parameters:
+        -----------
+        pos: array
+                This initializes the position state variable.
+        vel: array
+                This initializes the velocity state variable.
+
+        Output:
+        -------
+        Returns instantaneous derivative of velocity.
+    '''   
+    
+    if DRAG_BOOLEAN == True:
+        v_pertOblate    = oblate_pertubations(pos)
+        v_pertDrag    = drag(pos,vel)
+        v_pertTotal =(((-MU/((norm(pos))**3)))*pos) + v_pertOblate  + v_pertDrag 
+        return v_pertTotal 
     else:
-        p_o    = oblate_pertubations(r)
-        accltn =(((-mu/((norm(r))**3)))*r) + p_o 
-        return accltn   
+        v_pertOblate    = oblate_pertubations(pos)
+        v_pertTotal =(((-MU/((norm(pos))**3)))*pos) + v_pertOblate 
+        return v_pertTotal   
     
-
-
-#-----Calculates the Pertubations from the Effects of Oblateness of Earth-----
-#			 through J2 Model
-    
-def oblate_pertubations(post):   
-    '''
+def oblate_pertubations(pos):   
+    ''' Calculates the Pertubations from the Effects of 
+        Oblateness of Earth through J2 Model.
         J2 Perturbations: Pg 664 HD Curtis
-        
+
+        Parameters:
+        -----------
+        pos: array
+                This initializes the position state variable.
+
+        Output:
+        -------
+        Returns the perturbating accleration due 
+        to Oblateness of the Earth.      
     '''
-    r = norm(post)
-    const_J2 = (1.5*J2*mu*Radius_Earth**2) / (r**4)
-    z = post[2]
-    x, y, z = post
-    k = ((  5*((z/r)**2)  - 1 )/r)
+
+    scalar_pos = norm(pos)
+    CONST_J2 = (1.5*J2*MU*RADIUS_EARTH**2) / (scalar_pos**4)
+    x, y, z = pos
+    k = ((  5*((z/scalar_pos)**2)  - 1 )/scalar_pos)
     
-    p = np.array([x*k,  y*k,  z*((  5*((z/r)**2)  - 3 )/r)])
-    p = p*const_J2
-    return p
+    v_pertOblate = np.array([x*k,  y*k,  z*((  5*((z/scalar_pos)**2)  - 3 )/scalar_pos)])
+    v_pertOblate = v_pertOblate*CONST_J2
+    return v_pertOblate
 
+def drag(pos,vel):  
+    '''Calculates the Pertubations from the Effects of Atmospheric Drag,
+       assuming velocity of atmosphere at a particular point,
+       is appx. equal to cross product of angular velocity of Earth 
+       and position vector of that point.
 
+       ~~~~~Drag Equation~~~~~
+    
+        Parameters:
+        -----------
+        pos: array
+                This initializes the position state variable.
+        vel: array
+                This initializes the velocity state variable.
 
-#-----Calculates the Pertubations from the Effects of Atmospheric Drag-----    
-def drag(r,vel):  
+        Output:
+        -------
+        Returns the perturbating accleration due 
+        to drag from Earth's Atmosphere.
     '''
-        Assuming velocity of atmosphere at a particular point,
-        is appx. equal to cross product of angular velocity of Earth 
-        and position vector of that point.
-    '''
+
     vel = np.array(vel, dtype = np.float64)*1000 #Converting to m/s
-    r = np.array(r, dtype = np.float64) * 1000 #Converting to m
+    pos = np.array(pos, dtype = np.float64) * 1000 #Converting to m
     
-    v_atm = np.cross(w_angular_vel,r)
-    v_rel = vel - v_atm #Relative velocity being calculated.
+    v_velAtm = np.cross(ANGULAR_VELOCITY_EARTH,pos)
+    v_velRel = vel - v_velAtm #Relative velocity being calculated.
     
-    denst = density(r/1000) #Requires argument in Km
-    p = (-0.5) * denst * norm(v_rel) * B_coeff * v_rel #Accleration in m/s
-    return (p/1000) #Returning Accleration in km/s
+    denst = density(pos/1000) #Requires argument in Km
+    v_pertDrag = (-0.5) * denst * norm(v_velRel) * B_COEFF * v_velRel #Accleration in m/s
+    return (v_pertDrag/1000) #Returning Accleration in km/s
 
+def density(pos):
+    '''Calulates the atomosphereic density from a model based on 
+       exponential decay, where the input is the height
+       of the satellite from surface of the Earth,
+       and the output is density of the atmosphere in kg/m^-3
+       NOTE: The model is made specifically for LEO, i.e, 
+       h ranging from 200km to 1000km.
 
+       ~~~~~~Density Equation~~~~~~~
 
-#-----Calulates the atomosphereic density from a model based on 
-#       exponential decay, where the input is the height
-#           of the satellite from surface of the Earth,
-#      and the output is density of the atmosphere in kg/m^-3
-#  NOTE: The model is made specifically for LEO, i.e, h ranging from 200km to 1000km.
+       Parameters:
+        -----------
+        pos: array
+                This initializes the position state variable.
 
-def density(r):
-    h = norm(r) - Radius_Earth #Appx height of satellite from surface of Earth.
+        Output:
+        -------
+        Returns the density of the atmosphere at that altitude.
+
+    '''
+    height = norm(pos) - RADIUS_EARTH #Appx height of satellite from surface of Earth.
     
     I, alpha1, alpha2, alpha3, beta = (-55.80854359317351, 17771.64895643925, -3718462.067004107, 291861748.7626916,0.008582907557446885)
     
-    rho = np.exp(I + beta*h + alpha1/h + alpha2/(h**2) + alpha3/(h**3) )
+    rho = np.exp(I + beta*height + alpha1/height + alpha2/(height**2) + alpha3/(height**3) )
     return rho #In kg/m^3
 
-
-
-#-----The Propogator involved in the Orbit Modelling that uses the-----
-#         Initial State Vectors and RK - 4 to approximate the 
-#		subsequent system of State Variables.
-#         RK - 4: X(n+1) = X(n) + h      (a + 2*b + 2*c + d)
-#                                ---  *  
-#                                 6
-def propagate(r,vel, time, h_step_size = 1, drag=False):
+def propagate(pos,vel, time, h_step_size = 1, drag=False):
     """Propogate the State Variables.
+       The Propogator here uses the initial State Vectors 
+       and RK - 4 to approximate the subsequent system 
+       of State Variables.
+       RK - 4: X(n+1) = X(n) + h      (a + 2*b + 2*c + d)
+                              ---  *  
+                               6
     
        Parameters:
        -----------
@@ -112,77 +170,77 @@ def propagate(r,vel, time, h_step_size = 1, drag=False):
        drag: boolean, optional
             Takes Drag into consideration as a perturbation as well.  
             Default = False      
+
+        Output:
+        -------
+        Returns the perturbating accleration due 
+        to Oblateness of the Earth.
     """    
-    x,y = np.array(r,np.float64),np.array(vel,np.float64)
+    v_x, v_y = np.array(pos,np.float64),np.array(vel,np.float64)
     steps = int(time/h_step_size)
     h = h_step_size
-    global dragBoolean
-    dragBoolean = drag
+    global DRAG_BOOLEAN
+    DRAG_BOOLEAN = drag
     
     for i in range(steps):
-        ax,ay = RK4_a(x,y,h)
-        bx,by = RK4_b(x,y,ax,ay,h)
-        cx,cy = RK4_c(x,y,bx,by,h)
-        dx,dy = RK4_d(x,y,cx,cy,h)
-        x = x + ((h)*(ax + 2*(bx + cx) + dx))/6
-        y = y + ((h)*(ay + 2*(by + cy) + dy))/6
+        v_ax, v_ay = RK4_a(v_x, v_y, h)
+        v_bx, v_by = RK4_b(v_x, v_y, v_ax, v_ay, h)
+        v_cx, v_cy = RK4_c(v_x, v_y, v_bx, v_by, h)
+        v_dx, v_dy = RK4_d(v_x, v_y, v_cx, v_cy, h)
+        v_x = v_x + ((h)*(v_ax + 2*(v_bx + v_cx) + v_dx))/6
+        v_y = v_y + ((h)*(v_ay + 2*(v_by + v_cy) + v_dy))/6
 
-    return x,y
+    return v_x, v_y
 
     
-def RK4_a(r,vel,h):
+def RK4_a(pos,vel,h):
     """ To Calculate Value of (a) of RK-4:
-        a = f(x).
+        v_a = f(v_x).
     """
-    ax,ay = np.zeros(3), np.zeros(3)
-    ax = f1(r,vel)
-    ay = f2(r,vel)
-    return ax,ay
+    v_ax, v_ay = np.zeros(3), np.zeros(3)
+    v_ax = f1(pos,vel)
+    v_ay = f2(pos,vel)
+    return v_ax,v_ay
     
-def RK4_b(r,vel,ax,ay,h):
+def RK4_b(pos,vel,v_ax,v_ay,h):
     """ To Calculate Value of (b) of RK-4:
-        b = f(x + (h/2)a)
+        v_b = f(v_x + (h/2)v_a)
     """
-    l,m = np.zeros(3), np.zeros(3)
-    l =  r + ((h/2)*ax)
-    m =  vel + ((h/2)*ay)
-    bx,by = f1(l,m),f2(l,m)
-    return bx,by
+    v_l, v_m = np.zeros(3), np.zeros(3)
+    v_l =  pos + ((h/2)*v_ax)
+    v_m =  vel + ((h/2)*v_ay)
+    v_bx,v_by = f1(v_l,v_m),f2(v_l,v_m)
+    return v_bx,v_by
     
-def RK4_c(r,vel,bx,by,h):
+def RK4_c(pos,vel,v_bx,v_by,h):
     """ To Calculate Value of (c) of RK-4:
-        c = f(x + (h/2)b)
+        v_c = f(v_x + (h/2)*v_b)
     """
-    l,m = np.zeros(3), np.zeros(3)
-    l =  r + ((h/2)*bx)
-    m =  vel + ((h/2)*by)
-    cx,cy = f1(l,m),f2(l,m)
-    return cx,cy
+    v_l, v_m = np.zeros(3), np.zeros(3)
+    v_l =  pos + ((h/2)*v_bx)
+    v_m =  vel + ((h/2)*v_by)
+    v_cx,v_cy = f1(v_l,v_m),f2(v_l,v_m)
+    return v_cx,v_cy
     
-def RK4_d(r,vel,cx,cy,h):
+def RK4_d(pos,vel,v_cx,v_cy,h):
     """ To Calculate Value of (d) of RK-4:
-        d = f(x + (h)c)
+        v_d = f(v_x + (h)*v_c)
     """
-    l,m = np.zeros(3), np.zeros(3)
-    l =  r + ((h)*cx)
-    m =  vel + ((h)*cy)
-    dx,dy = f1(l,m),f2(l,m)
-    return dx,dy
+    v_l,v_m = np.zeros(3), np.zeros(3)
+    v_l =  pos + ((h)*v_cx)
+    v_m =  vel + ((h)*v_cy)
+    v_dx,v_dy = f1(v_l,v_m),f2(v_l,v_m)
+    return v_dx,v_dy
     
-def norm(arr):
+def norm(v_arr):
     ''' Calculates 2-norm of a vector.
+        Parameters:
+        -----------
+        v_arr: array
+                This initializes the vector variable.
+
+        Output:
+        -------
+        Returns the 2-norm of the vector.  
     '''
-    return (arr[0]**2 + arr[1]**2 + arr[2]**2)**0.5
-    
-
-
-
-#-----Values of Orbital Constants being assigned-----
-mu = 398600.4415
-J2 = 1.082635854e-3 
-w_angular_vel = np.array([0,0,7.2921156e-5]) #Radians/sec
-c_drag = 2
-area = 0.01 #In m^3
-mass = 0.9 #In Kg
-Radius_Earth = 6378.1363          #In Km.
-B_coeff = (c_drag*area)/mass
+    return (v_arr[0]**2 + v_arr[1]**2 + v_arr[2]**2)**0.5
